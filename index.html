@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>Minimal YouTube</title>
+<link id="favicon" rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='26' fill='%23fff'/%3E%3C/svg%3E">
 <style>
   :root {
     --bg: #000; --card: #111; --line: #262626;
@@ -21,11 +22,12 @@
 
   /* Home */
   #home { min-height: 100%; display: flex; flex-direction: column; align-items: center; padding: 24px 16px 16px; }
-  .home-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; width: 100%; text-align: center; }
-  .logo { display: flex; align-items: center; gap: 10px; background: none; border: 0; flex-shrink: 0; }
-  .logo-mark { width: 40px; height: 28px; border: 1.5px solid #fff; border-radius: 8px; display: grid; place-items: center; font-weight: 700; font-size: 15px; flex-shrink: 0; }
-  .logo-text { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; }
-  .tagline { color: var(--muted); font-size: 14px; }
+  .home-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; width: 100%; text-align: center; }
+  .quote { color: var(--muted); font-size: 14px; line-height: 1.5; max-width: 380px; }
+  .logo { display: flex; align-items: center; gap: 12px; background: none; border: 0; flex-shrink: 0; }
+  .logo svg { width: 56px; height: 56px; flex-shrink: 0; }
+  .logo-text { font-size: 26px; font-weight: 600; letter-spacing: -0.01em; }
+  .topbar .logo svg { width: 36px; height: 36px; }
 
   .search { display: flex; align-items: center; width: min(520px, 100%); min-width: 0; background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
   .search:focus-within { border-color: #777; }
@@ -41,7 +43,8 @@
   .keyrow input { flex: 1; min-width: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; }
   .keyrow button { background: #fff; color: #000; border: 0; border-radius: 8px; padding: 0 14px; white-space: nowrap; }
 
-  .footer { padding-top: 24px; }
+  .footer { padding-top: 24px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .quota { font-size: 12px; color: #666; text-align: center; }
   .linkbtn { background: none; border: 0; color: #555; font-size: 12px; text-decoration: underline; }
   .linkbtn:hover { color: var(--muted); }
 
@@ -49,13 +52,14 @@
   #results { min-height: 100%; }
   .topbar { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: rgba(0,0,0,.95); border-bottom: 1px solid var(--line); }
   .topbar .search { flex: 1; width: auto; max-width: 600px; margin: 0 auto; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr)); gap: 22px 16px; padding: 18px 12px 40px; max-width: 1400px; margin: 0 auto; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr)); gap: 22px 16px; padding: 18px 12px 24px; max-width: 1400px; margin: 0 auto; }
   .vid { background: none; border: 0; text-align: left; display: block; min-width: 0; width: 100%; }
   .thumb { position: relative; aspect-ratio: 16/9; background: var(--card); border-radius: 10px; overflow: hidden; }
   .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .vid h3 { font-size: 14px; font-weight: 500; line-height: 1.35; margin-top: 9px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .vid p { font-size: 12px; color: var(--muted); margin-top: 3px; }
   .status { padding: 60px 20px; text-align: center; color: var(--muted); font-size: 14px; line-height: 1.5; }
+  .results-foot { padding: 0 12px 32px; }
 
   /* Player */
   #player { position: fixed; inset: 0; z-index: 50; background: #000; display: flex; flex-direction: column; }
@@ -65,7 +69,6 @@
   .pbtn:hover { background: #2a2a2a; }
   #player iframe { flex: 1; width: 100%; border: 0; min-height: 0; }
   .hint { padding: 10px 14px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); line-height: 1.5; }
-  .hint a { color: var(--text); }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -74,11 +77,12 @@
 <!-- Home -->
 <div id="home">
   <main class="home-main">
+    <p id="quote" class="quote"></p>
+
     <button class="logo" onclick="goHome()" aria-label="Minimal YouTube home">
-      <div class="logo-mark">M</div>
-      <div class="logo-text">Minimal YouTube</div>
+      <span class="logo-art" data-uid="home"></span>
+      <span class="logo-text">Minimal YouTube</span>
     </button>
-    <p class="tagline">Search, watch, leave.</p>
 
     <form class="search" onsubmit="onSearch(event, 'homeInput')">
       <input id="homeInput" type="text" placeholder="Search or paste a YouTube link" autocomplete="off" required>
@@ -98,6 +102,7 @@
   </main>
 
   <footer class="footer">
+    <div class="quota"></div>
     <button id="changeKey" class="linkbtn hidden" onclick="showKeyBox()">Change API key</button>
   </footer>
 </div>
@@ -105,7 +110,7 @@
 <!-- Results -->
 <div id="results" class="hidden">
   <div class="topbar">
-    <button class="logo" onclick="goHome()" aria-label="Home"><div class="logo-mark">M</div></button>
+    <button class="logo" onclick="goHome()" aria-label="Home"><span class="logo-art" data-uid="bar"></span></button>
     <form class="search" onsubmit="onSearch(event, 'resultsInput')">
       <input id="resultsInput" type="text" placeholder="Search" autocomplete="off" required>
       <button class="go" type="submit" aria-label="Search">
@@ -115,6 +120,7 @@
   </div>
   <div id="status" class="status"></div>
   <div id="grid" class="grid"></div>
+  <div class="results-foot quota"></div>
 </div>
 
 <!-- Player -->
@@ -128,14 +134,58 @@
     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
     allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
   <div id="hint" class="hint hidden">
-    Seeing a player error (such as 153)? YouTube blocks embeds on pages opened from a file. Use the YouTube button above to watch, or put this page on a web address (see the note in chat).
+    Seeing a player error (such as 153)? YouTube blocks embeds on pages opened from a file. Use the YouTube button above to watch, or open this page from a web address.
   </div>
 </div>
 
 <script>
   const $ = id => document.getElementById(id);
   const KEY_NAME = 'minimalYtApiKey';
+  const QUOTA_NAME = 'minimalYtQuota';
+  const DAILY_UNITS = 10000;   // free daily quota for YouTube Data API
+  const SEARCH_COST = 100;     // one search request costs 100 units
 
+  /* ---------- Logo (also used as favicon) ---------- */
+  function logoSvg(uid) {
+    return `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Minimal YouTube logo">
+  <defs>
+    <clipPath id="c${uid}"><rect width="100" height="100" rx="26"/></clipPath>
+    <linearGradient id="t${uid}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#000"/><stop offset="1" stop-color="#242424"/>
+    </linearGradient>
+    <linearGradient id="b${uid}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8f8f8f"/><stop offset="0.45" stop-color="#fff"/><stop offset="1" stop-color="#fff"/>
+    </linearGradient>
+  </defs>
+  <g clip-path="url(#c${uid})">
+    <rect width="100" height="100" fill="url(#t${uid})"/>
+    <path d="M0 64 Q50 40 100 64 V100 H0 Z" fill="url(#b${uid})"/>
+  </g>
+  <rect x="0.75" y="0.75" width="98.5" height="98.5" rx="25.5" fill="none" stroke="#fff" stroke-opacity="0.22" stroke-width="1.5"/>
+  <path d="M28 44 V16 H38 L50 30 L62 16 H72 V44 H63 V28 L50 42 L37 28 V44 Z" fill="#fff"/>
+  <path d="M42 68 L42 88 L60 78 Z" fill="#000" stroke="#000" stroke-width="4" stroke-linejoin="round"/>
+</svg>`;
+  }
+
+  function mountLogos() {
+    document.querySelectorAll('.logo-art').forEach(el => { el.innerHTML = logoSvg(el.dataset.uid); });
+    $('favicon').href = 'data:image/svg+xml,' + encodeURIComponent(logoSvg('fav'));
+  }
+
+  /* ---------- Inspiring line ---------- */
+  const QUOTES = [
+    'Learn something today that your future self will thank you for.',
+    'Watch with purpose, then go build something.',
+    'Small steps, taken daily, move mountains.',
+    'Your attention is precious. Spend it on what grows you.',
+    'Search for answers, not distractions.',
+    'One good video can change how you see everything.',
+    'Focus now. Scroll never.'
+  ];
+  function showQuote() { $('quote').textContent = QUOTES[Math.floor(Math.random() * QUOTES.length)]; }
+
+  /* ---------- API key ---------- */
   function getKey() { try { return localStorage.getItem(KEY_NAME) || ''; } catch { return ''; } }
   function setKey(k) { try { localStorage.setItem(KEY_NAME, k); } catch {} }
 
@@ -156,6 +206,48 @@
     refreshSetup(); $('homeInput').focus();
   }
 
+  /* ---------- Quota counter ----------
+     The YouTube API does not report remaining quota, and checking it would
+     cost units. So searches are counted here, in this browser. Google resets
+     the daily quota at midnight Pacific Time. */
+  const PT = 'America/Los_Angeles';
+
+  function ptDay() {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: PT, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  }
+
+  function loadQuota() {
+    let q = null;
+    try { q = JSON.parse(localStorage.getItem(QUOTA_NAME)); } catch {}
+    const today = ptDay();
+    if (!q || q.day !== today) q = { day: today, used: 0 };
+    return q;
+  }
+  function saveQuota(q) { try { localStorage.setItem(QUOTA_NAME, JSON.stringify(q)); } catch {} }
+
+  function resetTimeLocal() {
+    const parts = new Intl.DateTimeFormat('en-US', { timeZone: PT, hour: 'numeric', minute: 'numeric', second: 'numeric', hourCycle: 'h23' }).formatToParts(new Date());
+    const get = t => Number(parts.find(p => p.type === t).value);
+    const secsIntoDay = get('hour') * 3600 + get('minute') * 60 + get('second');
+    const next = new Date(Date.now() + (86400 - secsIntoDay) * 1000);
+    return next.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  }
+
+  function addUsage(units) {
+    const q = loadQuota();
+    q.used = Math.min(DAILY_UNITS, q.used + units);
+    saveQuota(q);
+    renderQuota();
+  }
+
+  function renderQuota() {
+    const q = loadQuota();
+    const left = Math.max(0, Math.floor((DAILY_UNITS - q.used) / SEARCH_COST));
+    const text = `${left} ${left === 1 ? 'search' : 'searches'} left today · resets at ${resetTimeLocal()}`;
+    document.querySelectorAll('.quota').forEach(el => { el.textContent = text; });
+  }
+
+  /* ---------- Search ---------- */
   function extractVideoId(text) {
     const m = text.match(/(?:youtu\.be\/|v\/|embed\/|shorts\/|watch\?v=|&v=)([A-Za-z0-9_-]{11})/);
     if (m) return m[1];
@@ -192,10 +284,17 @@
       const res = await fetch(url);
       const data = await res.json();
       if (!res.ok) {
+        const reason = data?.error?.errors?.[0]?.reason;
+        if (reason === 'quotaExceeded' || reason === 'dailyLimitExceeded') {
+          addUsage(DAILY_UNITS);
+          setStatus('Daily search limit reached. It resets at ' + resetTimeLocal() + '.');
+          return;
+        }
         const msg = data?.error?.message || 'Request failed.';
         setStatus(msg + ' If this keeps happening, check your API key at the bottom of the home page.');
         return;
       }
+      addUsage(SEARCH_COST);
       if (!data.items?.length) { setStatus('No videos found. Try different words.'); return; }
       setStatus('');
       renderGrid(data.items);
@@ -228,8 +327,8 @@
     });
   }
 
+  /* ---------- Player ---------- */
   function play(id, title) {
-    // The origin parameter helps YouTube accept the embed on normal web addresses.
     const origin = location.protocol.startsWith('http') ? '&origin=' + encodeURIComponent(location.origin) : '';
     $('frame').src = 'https://www.youtube.com/embed/' + id + '?autoplay=1&rel=0&playsinline=1' + origin;
     $('playerTitle').textContent = title;
@@ -251,6 +350,7 @@
     $('home').classList.remove('hidden');
     $('homeInput').value = '';
     refreshSetup();
+    renderQuota();
     $('homeInput').focus();
   }
 
@@ -258,6 +358,9 @@
     if (e.key === 'Escape' && !$('player').classList.contains('hidden')) closePlayer();
   });
 
+  mountLogos();
+  showQuote();
+  renderQuota();
   refreshSetup();
   $('homeInput').focus();
 </script>
