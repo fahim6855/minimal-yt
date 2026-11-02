@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minimal YouTube</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f0f; --card: #1a1a1a; --line: #2a2a2a;
+    --text: #f1f1f1; --muted: #9a9a9a; --red: #ff0000;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; }
+  body { background: var(--bg); color: var(--text); font-family: Inter, system-ui, sans-serif; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+  .hidden { display: none !important; }
+
+  /* Home */
+  #home { min-height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; gap: 20px; text-align: center; }
+  .logo { display: flex; align-items: center; gap: 12px; cursor: pointer; background: none; border: 0; }
+  .logo-mark { width: 52px; height: 36px; background: var(--red); border-radius: 10px; display: grid; place-items: center; font-weight: 800; font-size: 20px; }
+  .logo-text { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; }
+  .logo-text span { color: var(--red); }
+  .tagline { color: var(--muted); font-size: 14px; }
+
+  .search { display: flex; width: min(560px, 100%); background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 4px; }
+  .search:focus-within { border-color: var(--red); }
+  .search input { flex: 1; min-width: 0; background: transparent; border: 0; color: var(--text); font: inherit; padding: 12px 16px; outline: none; }
+  .search input::placeholder { color: #666; }
+  .go { background: var(--red); border: 0; border-radius: 999px; padding: 0 20px; font-weight: 600; }
+  .go:hover { background: #cc0000; }
+
+  .keybox { width: min(560px, 100%); background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; text-align: left; font-size: 13px; color: var(--muted); line-height: 1.5; }
+  .keybox strong { color: var(--text); }
+  .keybox a { color: #ff6b6b; }
+  .keyrow { display: flex; gap: 8px; margin-top: 10px; }
+  .keyrow input { flex: 1; min-width: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; color: var(--text); font: inherit; padding: 9px 12px; }
+  .keyrow button { background: #2a2a2a; border: 0; border-radius: 8px; padding: 0 16px; }
+  .keyrow button:hover { background: #3a3a3a; }
+  .linkbtn { background: none; border: 0; color: var(--muted); font-size: 12px; text-decoration: underline; }
+
+  /* Results */
+  #results { min-height: 100%; }
+  .topbar { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: rgba(15,15,15,.95); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+  .topbar .logo-mark { width: 38px; height: 26px; font-size: 14px; border-radius: 7px; }
+  .topbar .search { flex: 1; width: auto; max-width: 640px; margin: 0 auto; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 24px 16px; padding: 20px 16px 40px; max-width: 1400px; margin: 0 auto; }
+  .vid { background: none; border: 0; text-align: left; display: block; }
+  .thumb { position: relative; aspect-ratio: 16/9; background: var(--card); border-radius: 12px; overflow: hidden; }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .vid:hover .thumb img { transform: scale(1.03); transition: transform .25s; }
+  .vid h3 { font-size: 14px; font-weight: 600; line-height: 1.35; margin-top: 10px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .vid p { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .status { padding: 60px 20px; text-align: center; color: var(--muted); font-size: 14px; }
+  .status.err { color: #ff8a8a; }
+
+  /* Player */
+  #player { position: fixed; inset: 0; z-index: 50; background: #000; display: flex; flex-direction: column; }
+  .pbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 14px; background: var(--bg); border-bottom: 1px solid var(--line); }
+  .pbar .title { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pbtn { background: #2a2a2a; border: 0; border-radius: 999px; padding: 8px 14px; font-size: 13px; white-space: nowrap; }
+  .pbtn:hover { background: var(--red); }
+  #player iframe { flex: 1; width: 100%; border: 0; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<!-- Home -->
+<main id="home">
+  <button class="logo" onclick="goHome()" aria-label="Minimal YouTube home">
+    <div class="logo-mark">M</div>
+    <div class="logo-text">Minimal <span>YouTube</span></div>
+  </button>
+  <p class="tagline">Search, watch, leave.</p>
+
+  <form class="search" onsubmit="onSearch(event, 'homeInput')">
+    <input id="homeInput" type="text" placeholder="Search videos or paste a YouTube link" autocomplete="off" required>
+    <button class="go" type="submit">Search</button>
+  </form>
+
+  <div id="keybox" class="keybox hidden">
+    <strong>One-time setup:</strong> YouTube doesn't allow its own search page inside another site, so this page uses a free YouTube API key to fetch results.
+    <br>Get one at <a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noopener">Google Cloud Console</a>: enable "YouTube Data API v3", then create an API key.
+    <div class="keyrow">
+      <input id="keyInput" type="password" placeholder="Paste API key" autocomplete="off">
+      <button type="button" onclick="saveKey()">Save key</button>
+    </div>
+  </div>
+  <button id="changeKey" class="linkbtn hidden" onclick="showKeyBox()">Change API key</button>
+</main>
+
+<!-- Results -->
+<div id="results" class="hidden">
+  <div class="topbar">
+    <button class="logo" onclick="goHome()" aria-label="Home"><div class="logo-mark">M</div></button>
+    <form class="search" onsubmit="onSearch(event, 'resultsInput')">
+      <input id="resultsInput" type="text" placeholder="Search" autocomplete="off" required>
+      <button class="go" type="submit">Search</button>
+    </form>
+  </div>
+  <div id="status" class="status"></div>
+  <div id="grid" class="grid"></div>
+</div>
+
+<!-- Player -->
+<div id="player" class="hidden">
+  <div class="pbar">
+    <button class="pbtn" onclick="closePlayer()">← Back to results</button>
+    <span class="title" id="playerTitle"></span>
+    <a class="pbtn" id="ytLink" href="#" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:none">Open on YouTube</a>
+  </div>
+  <iframe id="frame" title="Video player" src="about:blank"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+    allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+</div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const KEY_NAME = 'minimalYtApiKey';
+
+  function getKey() { try { return localStorage.getItem(KEY_NAME) || ''; } catch { return ''; } }
+  function setKey(k) { try { localStorage.setItem(KEY_NAME, k); } catch {} }
+
+  function refreshSetup() {
+    const has = !!getKey();
+    $('keybox').classList.toggle('hidden', has);
+    $('changeKey').classList.toggle('hidden', !has);
+  }
+  function showKeyBox() { $('keybox').classList.remove('hidden'); $('changeKey').classList.add('hidden'); $('keyInput').focus(); }
+  function saveKey() {
+    const v = $('keyInput').value.trim();
+    if (!v) return;
+    setKey(v); $('keyInput').value = '';
+    refreshSetup(); $('homeInput').focus();
+  }
+
+  function extractVideoId(text) {
+    const m = text.match(/(?:youtu\.be\/|v\/|embed\/|watch\?v=|&v=)([A-Za-z0-9_-]{11})/);
+    if (m) return m[1];
+    return /^[A-Za-z0-9_-]{11}$/.test(text) ? text : null;
+  }
+
+  function decode(s) { const t = document.createElement('textarea'); t.innerHTML = s; return t.value; }
+
+  function onSearch(e, inputId) {
+    e.preventDefault();
+    const q = $(inputId).value.trim();
+    if (!q) return;
+    const id = extractVideoId(q);
+    if (id) return play(id, '');
+    runSearch(q);
+  }
+
+  async function runSearch(q) {
+    const key = getKey();
+    if (!key) { showKeyBox(); $('homeInput').blur(); return; }
+
+    $('home').classList.add('hidden');
+    $('results').classList.remove('hidden');
+    $('resultsInput').value = q;
+    $('grid').innerHTML = '';
+    setStatus('Searching…');
+
+    const url = 'https://www.googleapis.com/youtube/v3/search?' + new URLSearchParams({
+      part: 'snippet', type: 'video', maxResults: '24', q, key, safeSearch: 'none'
+    });
+
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      if (!res.ok) {
+        const msg = data?.error?.message || 'Request failed.';
+        const bad = res.status === 400 || res.status === 403;
+        setStatus(msg + (bad ? ' Check that YouTube Data API v3 is enabled for your key, or change the key on the home page.' : ''), true);
+        return;
+      }
+      if (!data.items?.length) { setStatus('No videos found. Try different words.'); return; }
+      setStatus('');
+      renderGrid(data.items);
+    } catch {
+      setStatus('Could not reach YouTube. Check your internet connection.', true);
+    }
+  }
+
+  function setStatus(msg, err) {
+    const s = $('status');
+    s.textContent = msg;
+    s.className = 'status' + (err ? ' err' : '');
+    s.classList.toggle('hidden', !msg);
+  }
+
+  function renderGrid(items) {
+    const grid = $('grid');
+    grid.innerHTML = '';
+    items.forEach(it => {
+      const id = it.id.videoId;
+      const sn = it.snippet;
+      const title = decode(sn.title);
+      const b = document.createElement('button');
+      b.className = 'vid';
+      b.innerHTML = '<div class="thumb"><img loading="lazy" alt=""></div><h3></h3><p></p>';
+      b.querySelector('img').src = (sn.thumbnails.medium || sn.thumbnails.default).url;
+      b.querySelector('h3').textContent = title;
+      b.querySelector('p').textContent = decode(sn.channelTitle);
+      b.onclick = () => play(id, title);
+      grid.appendChild(b);
+    });
+  }
+
+  function play(id, title) {
+    $('frame').src = 'https://www.youtube-nocookie.com/embed/' + id + '?autoplay=1&rel=0';
+    $('playerTitle').textContent = title;
+    $('ytLink').href = 'https://www.youtube.com/watch?v=' + id;
+    $('player').classList.remove('hidden');
+  }
+
+  function closePlayer() {
+    $('frame').src = 'about:blank';
+    $('player').classList.add('hidden');
+    // If we came from a pasted link with no results behind it, go home
+    if ($('results').classList.contains('hidden')) goHome();
+  }
+
+  function goHome() {
+    $('frame').src = 'about:blank';
+    $('player').classList.add('hidden');
+    $('results').classList.add('hidden');
+    $('home').classList.remove('hidden');
+    $('homeInput').value = '';
+    refreshSetup();
+    $('homeInput').focus();
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && !$('player').classList.contains('hidden')) closePlayer();
+  });
+
+  refreshSetup();
+  $('homeInput').focus();
+</script>
+</body>
+</html>
